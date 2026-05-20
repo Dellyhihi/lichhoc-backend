@@ -1,23 +1,22 @@
 const express = require('express');
 const cors = require('cors');
-// Gọi trực tiếp file xử lý của trường ĐH Nông Lâm Thái Nguyên
 const tuafPortal = require('./portals/tuaf'); 
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Định tuyến API xử lý Đăng nhập và lấy lịch học
+// Định tuyến API - Đã đồng bộ theo biến maSV và pass của LoginScreen.js
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { maSV, pass } = req.body; // Sửa ở đây để hứng đúng dữ liệu từ App
     
-    if (!username || !password) {
+    if (!maSV || !pass) {
         return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ tài khoản và mật khẩu!' });
     }
 
     try {
-        // Chuyển tiếp thông tin đăng nhập sang file tuaf.js để xử lý cào dữ liệu
-        const result = await tuafPortal.loginAndFetchSchedule(username, password);
+        // Truyền maSV làm username, pass làm password vào file cào dữ liệu tuaf.js
+        const result = await tuafPortal.loginAndFetchSchedule(maSV, pass);
         return res.json(result);
     } catch (error) {
         console.error('Lỗi hệ thống backend:', error);
@@ -25,8 +24,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Chạy server ở port mặc định của Render (hoặc 8081 khi chạy local)
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server kết nối lịch học đang chạy mượt mà trên cổng ${PORT}`);
 });
