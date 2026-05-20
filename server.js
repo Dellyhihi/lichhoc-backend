@@ -1,56 +1,32 @@
-/**
- * SERVER CHÍNH
- * Chạy: npm start
- * Cài:  npm install
- *
- * Để thêm cổng mới: chỉ cần tạo file mới trong portals/ theo _TEMPLATE.js
- */
-
 const express = require('express');
-const cors    = require('cors');
-const registry = require('./registry');
+const cors = require('cors');
+// Gọi trực tiếp file xử lý của trường ĐH Nông Lâm Thái Nguyên
+const tuafPortal = require('./portals/tuaf'); 
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ─── GET /api/portals ────────────────────────────
-// Trả về danh sách cổng cho app hiển thị dropdown chọn trường
-app.get('/api/portals', (req, res) => {
-  res.json({ portals: registry.list() });
-});
-
-// ─── POST /api/login ─────────────────────────────
-// Body: { portalId, maSV, matKhau }
+// Định tuyến API xử lý Đăng nhập và lấy lịch học
 app.post('/api/login', async (req, res) => {
-  const { portalId, maSV, matKhau } = req.body;
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ tài khoản và mật khẩu!' });
+    }
 
-  if (!portalId || !maSV || !matKhau) {
-    return res.status(400).json({
-      success: false,
-      message: 'Thiếu thông tin: portalId, maSV, matKhau',
-    });
-  }
-
-  try {
-    const result = await registry.authenticate(portalId, maSV.trim(), matKhau);
-    res.json({ success: true, ...result });
-  } catch (err) {
-    res.status(401).json({ success: false, message: err.message });
-  }
+    try {
+        // Chuyển tiếp thông tin đăng nhập sang file tuaf.js để xử lý cào dữ liệu
+        const result = await tuafPortal.loginAndFetchSchedule(username, password);
+        return res.json(result);
+    } catch (error) {
+        console.error('Lỗi hệ thống backend:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi kết nối server cổng trường, vui lòng thử lại sau!' });
+    }
 });
 
-// ─── GET /api/health ─────────────────────────────
-app.get('/api/health', (_, res) => {
-  res.json({ status: 'ok', portals: registry.list().map(p => p.id) });
-});
-
-const PORT = process.env.PORT || 3001;
+// Chạy server ở port mặc định của Render (hoặc 8081 khi chạy local)
+const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
-  console.log(`\n🚀 Server: http://localhost:${PORT}`);
-  console.log(`📋 Portals: ${registry.list().map(p => p.shortName).join(', ')}`);
-  console.log(`\nAPI:`);
-  console.log(`  GET  /api/portals       → danh sách cổng`);
-  console.log(`  POST /api/login         → đăng nhập`);
-  console.log(`  GET  /api/health        → kiểm tra\n`);
+    console.log(`Server kết nối lịch học đang chạy mượt mà trên cổng ${PORT}`);
 });
